@@ -1,5 +1,5 @@
 <?php
-require 'vendor/autoload.php';
+//require 'vendor/autoload.php';
 //database connection file include
 include '../config.php';
 
@@ -24,14 +24,15 @@ if(isset($_POST["export_csv"])){
 
 
 
-$reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReader('Csv');
-$objPHPExcel = $reader->load('export_items.csv');
-$objWriter = \PhpOffice\PhpSpreadsheet\IOFactory::createWriter($objPHPExcel, 'Xlsx');
-if($objWriter->save('export_items.xlsx'))
-{
-	
-}
-$filename = 'export_items.xlsx';
+	// $reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReader('Csv');
+	// $objPHPExcel = $reader->load('export_items.csv');
+	// $objWriter = \PhpOffice\PhpSpreadsheet\IOFactory::createWriter($objPHPExcel, 'Xlsx');
+	// if($objWriter->save('export_items.xlsx'))
+	// {
+		
+	// }
+	// $filename = 'export_items.xlsx';
+
 	// download
 	header("Content-Description: File Transfer");
 	header("Content-Disposition: attachment; filename=".$filename);
@@ -495,6 +496,7 @@ $item_array[0] = array(
 			);
 
 $no = 1;
+
 foreach($response->GetActiveItemsResult->ActiveItem as $key => $valu)
 {
     
@@ -506,6 +508,12 @@ foreach($response->GetActiveItemsResult->ActiveItem as $key => $valu)
 	 {
 	  continue;
 	 }
+
+// 	 echo "<pre>";
+// 		print_r($valu);
+// 	 echo "</pre>";
+// die("gfjhgfh");
+
 
 	$SKU = $valu->SKU;
 
@@ -543,12 +551,12 @@ foreach($response->GetActiveItemsResult->ActiveItem as $key => $valu)
 	if($valu->Barcode != '' && ($count_barcode_digit == 12 || $count_barcode_digit == 11))
 	{
 		$product_id_type =$valu->Barcode;
-		$product_ref_type='upc';
+		$product_ref_type='UPC';
 	}
 	else if($valu->Barcode != '' && $count_barcode_digit == 13)
 	{
 		$product_id_type =$valu->Barcode;
-		$product_ref_type='ean';
+		$product_ref_type='EAN';
 	}
 	else
 	{
@@ -608,23 +616,23 @@ foreach($response->GetActiveItemsResult->ActiveItem as $key => $valu)
 
 	if($brand_name == 'Thoms Sabo')
 	{
-		$Country_Region_Publication = 'GR.';
+		$Country_Region_Publication = 'Greece';
 	}
 	elseif($brand_name == 'Ania Haie')
 	{
-		$Country_Region_Publication = 'UK.';
+		$Country_Region_Publication = 'United Kingdom';
 	}
 	elseif($brand_name == 'Georgini')
 	{
-		$Country_Region_Publication = 'AU.';
+		$Country_Region_Publication = 'Australia';
 	}
 	elseif($brand_name == 'Ellani')
 	{
-		$Country_Region_Publication = 'AU.';
+		$Country_Region_Publication = 'Australia';
 	}
 	else
 	{
-		$Country_Region_Publication = 'AU.';
+		$Country_Region_Publication = 'Australia';
 	}
 
 	unset($img_url);
@@ -647,7 +655,32 @@ foreach($response->GetActiveItemsResult->ActiveItem as $key => $valu)
 	}
 
 	$quantity = $valu->TotalAvailQOH;
-	$price = $valu->RetailerRRP1;
+	$price = $valu->CurrentPrice;
+
+	$sale_price = $valu->RetailerRRP1;
+
+	if(isset($valu->CurrentPrice) && $valu->CurrentPrice > 0)
+	{
+		$sale_price = $valu->CurrentPrice;
+	}
+	if((isset($valu->CurrentPrice) && $valu->CurrentPrice > 0) && (isset($valu->RetailerRRP1) && $valu->RetailerRRP1 > 0))
+	{
+		if($valu->CurrentPrice > $valu->RetailerRRP1)
+		{
+			$sale_price = $valu->RetailerRRP1;
+		}
+		elseif($valu->CurrentPrice < $valu->RetailerRRP1)
+		{
+			$sale_price = $valu->CurrentPrice;
+		}
+		else
+		{
+			$sale_price = $valu->CurrentPrice;
+		}
+	}
+
+	$startdate=date("d-m-Y");
+	$enddate=date("d-m-Y",strtotime('+3 years'));
 	
 
 
@@ -803,7 +836,7 @@ foreach($response->GetActiveItemsResult->ActiveItem as $key => $valu)
 			"",
 			"",
 			"",
-			false, //Is this product a battery or does it utilize batteries?
+			"NO", //Is this product a battery or does it utilize batteries?
 			"Not Applicable",
 			"Not Applicable",
 			"Not Applicable",
@@ -818,18 +851,18 @@ foreach($response->GetActiveItemsResult->ActiveItem as $key => $valu)
 			"",
 			$quantity,
 			1,
-			true,
+			"Yes",
 			"",
 			$quantity,
 			"",  //Shipping-Template
 			"",
 			"",
-			true,
-			true,
+			"YES",
+			"New",
 			"",
-			"", //Sale Price
-			"",
-			""
+			$sale_price, //Sale Price
+			$startdate,
+			$enddate
 	);
 // 	$item_array[$no] = array(
 // 					"Necklace",
